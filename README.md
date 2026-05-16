@@ -60,5 +60,4 @@ npm run dev
 
 The application should now be running! The frontend will typically be accessible at `http://localhost:5173` and the backend on the port specified in your `.env`.
 
-## License 📄
-This project is open-source and available under the [MIT License](LICENSE).
+
