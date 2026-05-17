@@ -25,6 +25,9 @@ app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+app.get('/', (req, res) => {
+  res.send('Backend is running successfully on Vercel!');
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/outfits', outfitRoutes);
 app.use('/api/upload', uploadRoutes);
