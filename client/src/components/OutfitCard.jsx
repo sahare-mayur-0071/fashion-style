@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaHeart, FaRegHeart, FaCartPlus, FaBolt } from 'react-icons/fa';
+import { FaHeart, FaRegHeart, FaShoppingCart, FaBolt } from 'react-icons/fa';
 import { CartContext } from '../context/CartContext';
 import { AuthContext } from '../context/AuthContext';
 import api from '../services/api';
@@ -15,6 +15,10 @@ const OutfitCard = ({ outfit, initialFavorite = false, onRemove }) => {
   const [isFav, setIsFav] = useState(initialFavorite);
   const [adding, setAdding] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
+
+  // Mock Original Price (approx 40% higher)
+  const originalPrice = Math.round(outfit.price * 1.4);
+  const discountPercent = Math.round(((originalPrice - outfit.price) / originalPrice) * 100);
 
   const toggleFavorite = async (e) => {
     e.stopPropagation();
@@ -44,19 +48,6 @@ const OutfitCard = ({ outfit, initialFavorite = false, onRemove }) => {
     setAdding(false);
   };
 
-  const handleBuyNow = async (e) => {
-    e.stopPropagation();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    if (outfit.stock > 0 && outfit.stock <= 5) {
-      setShowWarning(true);
-    } else {
-      await proceedToCheckout();
-    }
-  };
-
   const proceedToCheckout = async () => {
     setShowWarning(false);
     await addToCart(outfit._id, 'M', 1);
@@ -65,51 +56,47 @@ const OutfitCard = ({ outfit, initialFavorite = false, onRemove }) => {
 
   return (
     <>
-      <div className="outfit-card animate-fade-in" onClick={() => navigate(`/product/${outfit._id}`)} style={{ cursor: 'pointer' }}>
-        <div className="card-image-container">
-          <img src={outfit.image} alt={outfit.title} className="card-image" />
-          <div className="card-tags">
-            <span className="tag">{outfit.season}</span>
-            {outfit.stock === 0 && (
-              <span className="tag tag-danger">Out of Stock</span>
-            )}
-            {outfit.stock > 0 && outfit.stock <= 10 && (
-              <span className="tag tag-warning">🔥 Only {outfit.stock} left</span>
-            )}
-            {outfit.stock > 10 && (
-              <span className="tag tag-success">In Stock</span>
-            )}
+      <div className="product-card" onClick={() => navigate(`/product/${outfit._id}`)}>
+        <div className="product-image-wrapper">
+          <img src={outfit.image} alt={outfit.title} className="product-image" />
+          
+          <button className="wishlist-btn" onClick={toggleFavorite}>
+            {isFav ? <FaHeart color="#ff3e6c" size={18} /> : <FaRegHeart color="#535766" size={18} />}
+          </button>
+          
+          {outfit.stock === 0 ? (
+            <div className="stock-badge out-of-stock">OUT OF STOCK</div>
+          ) : outfit.stock <= 5 ? (
+            <div className="stock-badge few-left">ONLY {outfit.stock} LEFT</div>
+          ) : null}
+          
+          <div className="product-rating">
+            4.2 ★ | 1.2k
           </div>
-          <button className="fav-btn" onClick={toggleFavorite}>
-            {isFav ? <FaHeart color="#ff3366" /> : <FaRegHeart color="#0f172a" />}
+        </div>
+        
+        <div className="product-info">
+          <h3 className="product-brand">{outfit.category} Brand</h3>
+          <h4 className="product-title">{outfit.title}</h4>
+          
+          <div className="price-row">
+            <span className="current-price">₹{outfit.price}</span>
+            <span className="original-price">₹{originalPrice}</span>
+            <span className="discount-percent">({discountPercent}% OFF)</span>
+          </div>
+        </div>
+        
+        <div className="product-action-overlay">
+          <button 
+            className="action-btn-cart" 
+            onClick={handleAddToCart}
+            disabled={adding || outfit.stock === 0}
+          >
+            {adding ? '...' : <><FaShoppingCart /> ADD TO CART</>}
           </button>
         </div>
-        <div className="card-content">
-          <div className="card-header">
-            <h3 className="card-title">{outfit.title}</h3>
-            <span className="card-price">₹{outfit.price}</span>
-          </div>
-          <p className="card-description">{outfit.description}</p>
-          <div style={{ display: 'flex', gap: '0.8rem', marginTop: 'auto' }}>
-            <button 
-              className="btn-soft" 
-              style={{ flex: 1, padding: '0.85rem 0' }} 
-              onClick={handleAddToCart} 
-              disabled={adding || outfit.stock === 0}
-            >
-              {adding ? '...' : <><FaCartPlus size={18} /></>}
-            </button>
-            <button 
-              className="btn-primary" 
-              style={{ flex: 3 }} 
-              onClick={handleBuyNow}
-              disabled={outfit.stock === 0}
-            >
-              {outfit.stock === 0 ? 'Out of Stock' : <><FaBolt /> Buy Now</>}
-            </button>
-          </div>
-        </div>
       </div>
+
       <StockWarningModal 
         isOpen={showWarning} 
         items={[outfit]} 

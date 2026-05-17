@@ -23,6 +23,8 @@ import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { AdminAuthProvider } from './context/AdminAuthContext';
 
+import MobileBottomNav from './components/MobileBottomNav';
+
 function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -59,6 +61,7 @@ function AppContent() {
           <Route path="stock" element={<Stock />} />
         </Route>
       </Routes>
+      {!isAdminRoute && <MobileBottomNav />}
     </div>
   );
 }
