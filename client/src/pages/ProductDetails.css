@@ -277,5 +277,16 @@
 @media (max-width: 768px) {
   .pdp-container {
     flex-direction: column;
+    padding: 1rem;
+    gap: 1.5rem;
+  }
+  
+  .pdp-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .pdp-main-image {
+    max-width: 100%;
   }
 }

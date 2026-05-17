@@ -166,6 +166,12 @@ input:hover, select:hover {
   padding: 0 2rem;
 }
 
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+}
+
 /* Typography Overrides */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
