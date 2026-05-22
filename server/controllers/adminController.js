@@ -84,8 +84,31 @@ exports.updateOrderStatus = async (req, res) => {
 
 exports.getStock = async (req, res) => {
   try {
-    const outfits = await Outfit.find().sort({ createdAt: -1 });
-    res.json(outfits);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const search = req.query.search || '';
+    
+    let query = {};
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+        { gender: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    const total = await Outfit.countDocuments(query);
+    const outfits = await Outfit.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+      
+    res.json({
+      outfits,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching stock', error: error.message });
   }

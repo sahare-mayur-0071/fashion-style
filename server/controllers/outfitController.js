@@ -22,7 +22,9 @@ exports.getOutfits = async (req, res) => {
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
+        { description: { $regex: search, $options: 'i' } },
+        { category: { $regex: search, $options: 'i' } },
+        { tags: { $regex: search, $options: 'i' } }
       ];
     }
     
@@ -32,8 +34,20 @@ exports.getOutfits = async (req, res) => {
       query.tags = { $in: tagsArray };
     }
 
-    const outfits = await Outfit.find(query).limit(50);
-    res.json(outfits);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const total = await Outfit.countDocuments(query);
+    const outfits = await Outfit.find(query).skip(skip).limit(limit);
+    
+    // Return object containing outfits and pagination data
+    res.json({
+      outfits,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

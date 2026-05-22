@@ -125,3 +125,30 @@
   width: 100%;
   accent-color: #ff3f6c;
 }
+
+.scrollable-group {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* Custom scrollbar for scrollable groups */
+.scrollable-group::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollable-group::-webkit-scrollbar-track {
+  background: transparent; 
+}
+.scrollable-group::-webkit-scrollbar-thumb {
+  background: #d4d5d9; 
+  border-radius: 4px;
+}
+.scrollable-group::-webkit-scrollbar-thumb:hover {
+  background: #a9abb3; 
+}
+
+.label-text {
+  color: #282c3f;
+  font-size: 14px;
+  text-transform: capitalize;
+}

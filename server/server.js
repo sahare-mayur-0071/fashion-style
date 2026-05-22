@@ -23,6 +23,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/dataset', express.static(path.join(__dirname, '../archive/data')));
 
 // Routes
 app.get('/', (req, res) => {
@@ -45,4 +46,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fashion_s
   .catch(err => console.error(err));
 
 const PORT = process.env.PORT || 5000;
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 module.exports = app;

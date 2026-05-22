@@ -5,6 +5,12 @@ import { FaEdit, FaTrash, FaPlus, FaTimes } from 'react-icons/fa';
 const Stock = () => {
   const [outfits, setOutfits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '', description: '', price: '', image: '', category: '', gender: '', season: '', stock: 20
@@ -13,8 +19,16 @@ const Stock = () => {
 
   const fetchStock = async () => {
     try {
-      const res = await adminApi.get('/stock');
-      setOutfits(res.data);
+      const res = await adminApi.get(`/stock?page=${page}&limit=50&search=${encodeURIComponent(searchTerm)}`);
+      // Update logic since backend now returns pagination object
+      if (res.data.outfits) {
+        setOutfits(res.data.outfits);
+        setTotalPages(res.data.totalPages);
+        setTotalItems(res.data.total);
+      } else {
+        // Fallback if backend wasn't updated
+        setOutfits(res.data);
+      }
     } catch (err) {
       console.error(err);
     }
@@ -23,7 +37,13 @@ const Stock = () => {
 
   useEffect(() => {
     fetchStock();
-  }, []);
+  }, [page, searchTerm]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setSearchTerm(searchInput);
+    setPage(1); // Reset to first page on new search
+  };
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -89,8 +109,23 @@ const Stock = () => {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h2 style={{ color: 'var(--text-primary)', margin: 0 }}>Stock Management</h2>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h2 style={{ color: 'var(--text-primary)', margin: 0 }}>
+          Stock Management <span style={{ fontSize: '1rem', color: 'var(--text-secondary)', fontWeight: 'normal' }}>({totalItems} items)</span>
+        </h2>
+        
+        <form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '10px', flex: '1', maxWidth: '400px' }}>
+          <input 
+            type="text" 
+            placeholder="Search by title, category, gender..." 
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            className="auth-input"
+            style={{ marginBottom: 0, background: '#fff' }}
+          />
+          <button type="submit" className="btn-primary" style={{ padding: '0.5rem 1rem' }}>Search</button>
+        </form>
+
         <button type="button" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} onClick={() => handleOpenModal()}>
           <FaPlus /> Add New Item
         </button>
@@ -142,6 +177,28 @@ const Stock = () => {
           </tbody>
         </table>
       </div>
+
+      {totalPages > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginTop: '2rem' }}>
+          <button 
+            className="btn-outline" 
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </button>
+          <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>
+            Page {page} of {totalPages}
+          </span>
+          <button 
+            className="btn-outline" 
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </button>
+        </div>
+      )}
 
       {showModal && (
         <div className="animate-fade-in" style={{

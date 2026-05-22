@@ -4,6 +4,7 @@ import SidebarFilter from '../components/SidebarFilter';
 import OutfitCard from '../components/OutfitCard';
 import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
+import { FiSearch } from 'react-icons/fi';
 import './Listing.css';
 
 const Listing = () => {
@@ -12,8 +13,13 @@ const Listing = () => {
   const { user } = useContext(AuthContext);
   
   const [outfits, setOutfits] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState([]);
+  
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const [searchInput, setSearchInput] = useState('');
   const [filters, setFilters] = useState({
@@ -45,15 +51,26 @@ const Listing = () => {
   }, [location.search]);
 
   useEffect(() => {
-    fetchOutfits();
+    // Reset page to 1 when filters change
+    setPage(1);
+    setHasMore(true);
+    fetchOutfits(1);
     if (user) {
       fetchFavorites();
     }
     // eslint-disable-next-line
   }, [filters, user]);
 
-  const fetchOutfits = async () => {
-    setLoading(true);
+  useEffect(() => {
+    if (page > 1) {
+      fetchOutfits(page);
+    }
+    // eslint-disable-next-line
+  }, [page]);
+
+  const fetchOutfits = async (pageNum = 1) => {
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
     try {
       const queryParams = new URLSearchParams();
       if (filters.gender !== 'All') queryParams.append('gender', filters.gender);
@@ -62,13 +79,30 @@ const Listing = () => {
       queryParams.append('maxPrice', filters.maxPrice);
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.tags) queryParams.append('tags', filters.tags);
+      queryParams.append('page', pageNum);
+      queryParams.append('limit', 50);
 
       const res = await api.get(`/outfits?${queryParams.toString()}`);
-      setOutfits(res.data);
+      
+      const fetchedOutfits = res.data.outfits || res.data;
+      const total = res.data.total !== undefined ? res.data.total : fetchedOutfits.length;
+
+      setTotalItems(total);
+
+      if (pageNum === 1) {
+        setOutfits(fetchedOutfits);
+      } else {
+        setOutfits(prev => [...prev, ...fetchedOutfits]);
+      }
+      
+      if (fetchedOutfits.length < 50) {
+        setHasMore(false);
+      }
     } catch (error) {
       console.error("Failed to fetch outfits", error);
     }
     setLoading(false);
+    setLoadingMore(false);
   };
 
   const fetchFavorites = async () => {
@@ -92,19 +126,8 @@ const Listing = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontWeight: 700, color: '#282c3f' }}>Home / Clothing /</span>
             <span style={{ fontWeight: 700, color: '#282c3f' }}>Curated For You</span>
-            <span style={{ color: '#535766' }}> - {outfits.length} items</span>
+            <span style={{ color: '#535766' }}> - {totalItems} items</span>
           </div>
-          
-          <form onSubmit={handleSearchSubmit} className="search-bar" style={{ display: 'flex', gap: '0.5rem', width: '400px' }}>
-            <input 
-              type="text" 
-              placeholder="Search for products, brands and more" 
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              style={{ width: '100%', padding: '10px 15px', borderRadius: '4px', border: '1px solid #f5f5f6', background: '#f5f5f6', fontSize: '14px' }}
-            />
-            <button type="submit" style={{ display: 'none' }}>Search</button>
-          </form>
         </div>
       </div>
 
@@ -122,20 +145,44 @@ const Listing = () => {
               <p style={{ color: '#535766', marginTop: '10px' }}>Please check the spelling or try searching for something else</p>
             </div>
           ) : (
-            <div className="outfits-grid-wide" style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', 
-              gap: '20px', 
-              alignItems: 'start' 
-            }}>
-              {outfits.map((outfit, index) => (
-                <div key={outfit._id} style={{ animationDelay: `${(index % 6) * 0.1}s` }}>
-                  <OutfitCard 
-                    outfit={outfit} 
-                    initialFavorite={favoriteIds.includes(outfit._id)} 
-                  />
+            <div style={{ paddingBottom: '40px' }}>
+              <div className="outfits-grid-wide" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', 
+                gap: '20px', 
+                alignItems: 'start' 
+              }}>
+                {outfits.map((outfit, index) => (
+                  <div key={`${outfit._id}-${index}`} style={{ animationDelay: `${(index % 6) * 0.1}s` }}>
+                    <OutfitCard 
+                      outfit={outfit} 
+                      initialFavorite={favoriteIds.includes(outfit._id)} 
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              {hasMore && outfits.length > 0 && (
+                <div style={{ textAlign: 'center', marginTop: '40px' }}>
+                  <button 
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={loadingMore}
+                    style={{
+                      padding: '12px 30px',
+                      background: '#fff',
+                      border: '1px solid #d4d5d9',
+                      borderRadius: '4px',
+                      color: '#282c3f',
+                      fontWeight: 'bold',
+                      cursor: loadingMore ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                      opacity: loadingMore ? 0.7 : 1
+                    }}
+                  >
+                    {loadingMore ? 'Loading...' : 'Load More'}
+                  </button>
                 </div>
-              ))}
+              )}
             </div>
           )}
         </main>

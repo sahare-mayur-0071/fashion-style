@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiHeart, FiUser, FiShoppingCart, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
+import { FiHeart, FiUser, FiShoppingCart, FiLogOut, FiMenu, FiX, FiSearch } from 'react-icons/fi';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import './Navbar.css';
@@ -10,6 +10,7 @@ const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
   const { cart } = useContext(CartContext);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const cartItemCount = cart?.items?.reduce((total, item) => total + item.quantity, 0) || 0;
 
@@ -25,6 +26,15 @@ const Navbar = () => {
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
+  };
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/collections?search=${encodeURIComponent(searchQuery)}`);
+      setMobileMenuOpen(false);
+      setSearchQuery('');
+    }
   };
 
   return (
@@ -43,6 +53,20 @@ const Navbar = () => {
             <Link to="/" className="nav-link" onClick={closeMobileMenu}>Home</Link>
             <Link to="/collections" className="nav-link" onClick={closeMobileMenu}>Collections</Link>
           </div>
+          
+          <form onSubmit={handleSearch} className="global-search-form">
+            <input 
+              type="text" 
+              placeholder="Search for color, name, type..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="global-search-input"
+            />
+            <button type="submit" className="global-search-btn">
+              <FiSearch />
+            </button>
+          </form>
+
           <div className="nav-actions">
             {user && (
               <Link to="/favorites" className="action-btn" title="Favorites" onClick={closeMobileMenu}>
