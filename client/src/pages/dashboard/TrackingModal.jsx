@@ -1,21 +1,20 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { FaCheck, FaBox, FaTruck, FaMapMarkerAlt, FaHome, FaTimes } from 'react-icons/fa';
 
 const TrackingModal = ({ order, onClose }) => {
   if (!order) return null;
 
   const steps = [
-    { name: 'Order Placed', icon: <FaCheck /> },
-    { name: 'Packed', icon: <FaBox /> },
-    { name: 'Shipped', icon: <FaTruck /> },
-    { name: 'Out for Delivery', icon: <FaMapMarkerAlt /> },
-    { name: 'Delivered', icon: <FaHome /> }
+    { name: 'Order Placed', icon: <FaCheck />, desc: 'We have received your order.' },
+    { name: 'Packed', icon: <FaBox />, desc: 'Your order is packed and ready.' },
+    { name: 'Shipped', icon: <FaTruck />, desc: 'Your order is on the way.' },
+    { name: 'Out for Delivery', icon: <FaMapMarkerAlt />, desc: 'Out for delivery today.' },
+    { name: 'Delivered', icon: <FaHome />, desc: 'Your order has been delivered.' }
   ];
 
-  // Calculate which steps are completed based on trackingSteps array
   const completedSteps = order.trackingSteps?.map(t => t.status) || [];
   
-  // To handle legacy orders without tracking steps
   const legacyStatusMap = {
     'pending': ['Order Placed'],
     'paid': ['Order Placed'],
@@ -26,39 +25,57 @@ const TrackingModal = ({ order, onClose }) => {
 
   const derivedSteps = legacyStatusMap[order.status?.toLowerCase()] || ['Order Placed'];
   const actualCompletedSteps = [...new Set([...completedSteps, ...derivedSteps])];
+  
+  // Find current active step index
+  const activeStepIndex = actualCompletedSteps.length - 1;
+  const progressPercentage = (actualCompletedSteps.length / steps.length) * 100;
 
-  return (
-    <div className="tracking-modal-overlay animate-fade-in">
-      <div className="tracking-modal glass">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '1rem' }}>
-          <h3 style={{ color: '#000000' }}>Order Tracking</h3>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}>
+  return ReactDOM.createPortal(
+    <div className="tracking-modal-overlay">
+      <div className="tracking-modal glass modal-pop-in">
+        <div className="modal-header">
+          <div>
+            <h3 style={{ color: '#1a1f36', fontSize: '1.8rem', fontWeight: '800', marginBottom: '0.2rem' }}>Track Order</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>ID: <span style={{ color: 'var(--primary-color)', fontFamily: 'monospace', fontWeight: '600' }}>{order._id}</span></p>
+          </div>
+          <button onClick={onClose} className="close-btn">
             <FaTimes />
           </button>
         </div>
 
-        <div style={{ marginBottom: '2rem' }}>
-          <p style={{ color: 'var(--text-secondary)' }}>Order ID: <span style={{ color: 'var(--text-primary)', fontFamily: 'monospace' }}>{order._id}</span></p>
-          <p style={{ color: 'var(--text-secondary)' }}>Status: <span style={{ color: '#000000', fontWeight: 600 }}>{order.status.toUpperCase()}</span></p>
+        <div className="tracking-progress-container">
+          <div className="tracking-progress-bar">
+            <div 
+              className="tracking-progress-fill progress-fill-animate"
+              style={{ width: `${progressPercentage}%` }}
+            />
+          </div>
+          <p className="progress-text">{actualCompletedSteps.length} of {steps.length} steps completed</p>
         </div>
 
         <div className="timeline">
           {steps.map((step, index) => {
             const isCompleted = actualCompletedSteps.includes(step.name);
+            const isActive = index === activeStepIndex;
             const stepData = order.trackingSteps?.find(t => t.status === step.name);
             
             return (
-              <div key={index} className={`timeline-step ${isCompleted ? 'completed' : ''}`}>
-                <div className="timeline-icon">
-                  {step.icon}
+              <div 
+                key={index} 
+                className={`timeline-step ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''} step-stagger-${index}`}
+              >
+                <div className="timeline-icon-wrapper">
+                  <div className="timeline-icon">
+                    {step.icon}
+                  </div>
+                  {isActive && <div className="timeline-icon-pulse"></div>}
                 </div>
-                <div style={{ opacity: isCompleted ? 1 : 0.4 }}>
-                  <h4 style={{ color: isCompleted ? 'var(--primary-color)' : 'var(--text-primary)', marginBottom: '0.2rem' }}>{step.name}</h4>
-                  {isCompleted && stepData && (
-                    <>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.2rem' }}>{stepData.message}</p>
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{new Date(stepData.timestamp).toLocaleString()}</p>
-                    </>
+                
+                <div className="timeline-content">
+                  <h4 className="step-title">{step.name}</h4>
+                  <p className="step-desc">{stepData?.message || step.desc}</p>
+                  {isCompleted && stepData && stepData.timestamp && (
+                    <span className="step-time">{new Date(stepData.timestamp).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
                   )}
                 </div>
               </div>
@@ -66,7 +83,8 @@ const TrackingModal = ({ order, onClose }) => {
           })}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

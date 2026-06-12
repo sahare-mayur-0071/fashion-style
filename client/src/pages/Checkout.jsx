@@ -128,35 +128,62 @@ const Checkout = () => {
         return;
       }
 
-      // Simulated Online Payment Flow (Bypassing Razorpay for dummy transactions)
-      console.log("Mocking Online Payment Success...");
-      const { id: order_id } = result.data.order || {};
-      const { dbOrderId } = result.data;
+      // Real Razorpay Integration
+      const resScript = await loadRazorpayScript();
+      if (!resScript) {
+        alert("Razorpay SDK failed to load. Are you online?");
+        setIsProcessing(false);
+        return;
+      }
 
-      // Simulate network delay for payment processing
-      setTimeout(async () => {
-        try {
-          const verifyData = {
-            razorpay_payment_id: `pay_mock_${Date.now()}`,
-            razorpay_order_id: order_id || `order_mock_${Date.now()}`,
-            razorpay_signature: 'mock_signature',
-            dbOrderId
-          };
+      const { amount, id: order_id, currency } = result.data.order;
+      const { dbOrderId, key_id } = result.data;
 
-          const verify = await api.post('/payment/verify', verifyData);
-          if (verify.data.message === 'Payment verified successfully') {
-            const lowStockMsg = getLowStockAlert();
-            alert(`Payment Successful! Your order has been placed.${lowStockMsg}`);
-            fetchCart();
-            navigate('/profile/orders');
-          } else {
-            alert('Payment Verification Failed!');
+      const options = {
+        key: key_id,
+        amount: amount.toString(),
+        currency: currency,
+        name: "Fashion Style",
+        description: "Order Payment",
+        order_id: order_id,
+        handler: async function (response) {
+          try {
+            const verifyData = {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              dbOrderId
+            };
+
+            const verify = await api.post('/payment/verify', verifyData);
+            if (verify.data.message === 'Payment verified successfully') {
+              const lowStockMsg = getLowStockAlert();
+              alert(`Payment Successful! Your order has been placed.${lowStockMsg}`);
+              fetchCart();
+              navigate('/profile/orders');
+            } else {
+              alert('Payment Verification Failed!');
+            }
+          } catch (err) {
+            console.error(err);
+            alert('Error verifying payment. Please try again.');
           }
-        } catch (err) {
-          console.error(err);
-          alert('Error verifying mock payment. Please try again.');
-        }
-      }, 1500);
+        },
+        prefill: {
+          name: user?.name || "Customer",
+          email: user?.email || "customer@example.com",
+          contact: address.phone
+        },
+        theme: {
+          color: "#3b82f6",
+        },
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.on('payment.failed', function (response){
+        alert("Payment Failed: " + response.error.description);
+      });
+      paymentObject.open();
     } catch (err) {
       console.error(err);
       alert('Error processing order. Please try again.');
@@ -204,16 +231,35 @@ const Checkout = () => {
         {step === 2 && (
           <div className="animate-fade-in">
             <h4 style={{ color: '#000000', marginBottom: '1rem' }}>Payment Method</h4>
+            
             <div 
-              style={{ padding: '1rem', border: `1px solid ${paymentMethod === 'Online' ? 'var(--primary-color)' : 'var(--border-color)'}`, borderRadius: '8px', marginBottom: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '1rem' }}
+              style={{ padding: '1rem', border: `1px solid ${paymentMethod === 'Online' ? 'var(--primary-color)' : 'var(--border-color)'}`, borderRadius: '8px', marginBottom: '1rem', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '1rem' }}
               onClick={() => setPaymentMethod('Online')}
             >
-              <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {paymentMethod === 'Online' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></div>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{ width: '20px', height: '20px', borderRadius: '50%', border: '2px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {paymentMethod === 'Online' && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--primary-color)' }}></div>}
+                </div>
+                <div>
+                  <strong>Pay Online Securely (UPI, Cards, Net Banking)</strong>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Pay instantly via Razorpay</p>
+                </div>
               </div>
-              <div>
-                <strong>Pay Online Securely</strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>UPI, Internet Banking, Credit/Debit Cards</p>
+              
+              {/* Payment Logos inside Online Option */}
+              <div style={{ display: 'flex', gap: '1rem', paddingLeft: '36px', flexWrap: 'wrap' }}>
+                <div style={{ background: '#fff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/2/24/Paytm_Logo_%28standalone%29.svg" alt="Paytm" style={{ height: '16px' }} />
+                </div>
+                <div style={{ background: '#fff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0' }}>
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/7/71/PhonePe_Logo.svg" alt="PhonePe" style={{ height: '16px' }} />
+                </div>
+                <div style={{ background: '#fff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.8rem', fontWeight: 'bold', color: '#1a1f36', display: 'flex', alignItems: 'center' }}>
+                  Google Pay
+                </div>
+                <div style={{ background: '#fff', padding: '4px 8px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.8rem', fontWeight: 'bold', color: '#1a1f36', display: 'flex', alignItems: 'center' }}>
+                  Net Banking
+                </div>
               </div>
             </div>
 

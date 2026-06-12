@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FaCloudUploadAlt, FaTimes, FaSpinner, FaChevronDown } from 'react-icons/fa';
 import OutfitCard from '../components/OutfitCard';
+import AdBannerCarousel from '../components/AdBannerCarousel';
+import api from '../services/api';
 import './Home.css';
 
 const CustomSelect = ({ label, value, options, onChange }) => {
@@ -121,43 +123,65 @@ const Home = () => {
     setPreview(null);
   };
 
-  const mockOutfits = [
-    {
-      _id: 'mock1',
-      title: 'Beige Trench Coat Ensemble',
-      description: 'Elegant beige trench coat paired with a white silk top and tailored wide-leg trousers.',
-      price: 4500,
-      image: '/mock_outfit_1.png',
-      season: 'Winter',
-      stock: 5,
-    },
-    {
-      _id: 'mock2',
-      title: 'Classic Leather & Denim',
-      description: 'Premium black leather jacket with crisp white t-shirt and dark wash raw denim jeans.',
-      price: 6000,
-      image: '/mock_outfit_2.png',
-      season: 'All',
-      stock: 15,
-    }
-  ];
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     
-    // Simulate API call and loading time
-    setTimeout(() => {
-      setRecommendations(mockOutfits);
+    try {
+      let searchQuery = '';
+      
+      // 1. Process Visual AI Search if image is uploaded
+      if (file) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('image', file);
+        
+        const uploadRes = await api.post('/upload', formDataUpload, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        if (uploadRes.data.searchQuery) {
+          searchQuery = uploadRes.data.searchQuery;
+        }
+      }
+      
+      // 2. Fetch curated collection from database
+      const params = {
+        limit: 8,
+        gender: formData.gender !== 'Unisex' ? formData.gender : undefined,
+        maxPrice: formData.maxPrice,
+        season: formData.season !== 'All' ? formData.season : undefined
+      };
+      
+      // Pass the AI search keywords if we have them
+      if (searchQuery) {
+        params.search = searchQuery;
+      }
+      
+      let res = await api.get('/outfits', { params });
+      let finalOutfits = res.data.outfits || [];
+      
+      // 3. Smart Fallback: If AI visual search was too narrow, broaden the search
+      if (finalOutfits.length === 0 && searchQuery) {
+        delete params.search; // Remove strict visual matching
+        res = await api.get('/outfits', { params });
+        finalOutfits = res.data.outfits || [];
+      }
+      
+      setRecommendations(finalOutfits);
       setHasSearched(true);
-      setLoading(false);
       
       // Scroll down to results smoothly
       setTimeout(() => {
         document.getElementById('results-section')?.scrollIntoView({ behavior: 'smooth' });
       }, 300);
-    }, 1500);
+      
+    } catch (err) {
+      console.error('Curation Error:', err);
+      setError('Failed to curate collection. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Calculate percentage for slider gradient
@@ -166,6 +190,8 @@ const Home = () => {
   return (
     <div className="premium-home-container">
       <div className="ambient-glow"></div>
+      
+      <AdBannerCarousel />
       
       <motion.div 
         className="hero-section"

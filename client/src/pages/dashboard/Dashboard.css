@@ -208,72 +208,159 @@
   border-bottom: 1px dashed var(--border-color);
 }
 
-/* Tracking Modal */
+/* Tracking Modal Enhancements */
 .tracking-modal-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
 }
 
 .tracking-modal {
-  background: var(--surface-color);
+  background: #ffffff;
   width: 90%;
-  max-width: 600px;
-  border-radius: var(--radius-lg);
-  padding: 3rem;
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  border-radius: 24px;
+  padding: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0,0,0,0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.close-btn {
+  background: #f1f5f9;
+  border: none;
+  color: #64748b;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.close-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  transform: rotate(90deg);
+}
+
+.tracking-progress-container {
+  margin-bottom: 2.5rem;
+}
+
+.tracking-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.tracking-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  border-radius: 8px;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: #64748b;
+  font-weight: 600;
+  text-align: right;
 }
 
 .timeline {
-  margin-top: 2.5rem;
   position: relative;
+  padding-left: 10px;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
   top: 0;
-  left: 19px;
+  left: 29px; /* 10px padding + 19px half-width */
   height: 100%;
   width: 2px;
-  background: var(--border-color);
+  background: #e2e8f0;
 }
 
 .timeline-step {
   position: relative;
   padding-left: 60px;
   margin-bottom: 2.5rem;
+  display: flex;
+  min-height: 50px;
 }
 
-.timeline-icon {
+.timeline-step:last-child {
+  margin-bottom: 0;
+}
+
+.timeline-icon-wrapper {
   position: absolute;
   left: 0;
   top: 0;
   width: 40px;
   height: 40px;
+}
+
+.timeline-icon {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background: var(--surface-color);
-  border: 2px solid var(--border-color);
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-secondary);
-  z-index: 1;
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
+  color: #94a3b8;
+  z-index: 2;
+  position: relative;
+  font-size: 1.1rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .timeline-step.completed .timeline-icon {
-  background: var(--primary-color);
-  border-color: var(--primary-color);
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: #ffffff;
-  box-shadow: 0 0 15px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.timeline-step.active .timeline-icon {
+  transform: scale(1.1);
+}
+
+.timeline-icon-pulse {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  z-index: 1;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  80%, 100% { transform: scale(1.5); opacity: 0; }
 }
 
 .timeline-step.completed::before {
@@ -283,12 +370,51 @@
   left: 19px;
   height: calc(100% + 2.5rem - 40px);
   width: 2px;
-  background: var(--primary-color);
-  z-index: 0;
+  background: #3b82f6;
+  z-index: 1;
 }
 
-.timeline-step:last-child.completed::before {
-  display: none;
+.timeline-step:last-child::before {
+  display: none !important;
+}
+
+.timeline-content {
+  flex: 1;
+  padding-top: 2px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.timeline-step.completed .timeline-content {
+  opacity: 1;
+}
+
+.step-title {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.timeline-step.completed .step-title {
+  color: #3b82f6;
+}
+
+.step-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+  line-height: 1.4;
+}
+
+.step-time {
+  display: inline-block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
 }
 
 @media (max-width: 900px) {
@@ -304,3 +430,32 @@
     padding: 2rem 1.5rem;
   }
 }
+
+/* Pure CSS Animations for Modal */
+@keyframes modalPopIn {
+  0% { opacity: 0; transform: scale(0.9) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-pop-in {
+  animation: modalPopIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes progressFill {
+  0% { width: 0; }
+}
+
+.progress-fill-animate {
+  animation: progressFill 1s ease-out forwards;
+}
+
+@keyframes stepFadeIn {
+  0% { opacity: 0; transform: translateX(-20px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+.step-stagger-0 { animation: stepFadeIn 0.4s ease-out 0.1s forwards; opacity: 0; }
+.step-stagger-1 { animation: stepFadeIn 0.4s ease-out 0.25s forwards; opacity: 0; }
+.step-stagger-2 { animation: stepFadeIn 0.4s ease-out 0.4s forwards; opacity: 0; }
+.step-stagger-3 { animation: stepFadeIn 0.4s ease-out 0.55s forwards; opacity: 0; }
+.step-stagger-4 { animation: stepFadeIn 0.4s ease-out 0.7s forwards; opacity: 0; }

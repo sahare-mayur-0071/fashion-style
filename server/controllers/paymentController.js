@@ -80,7 +80,11 @@ exports.createOrder = async (req, res) => {
       trackingSteps: [{ status: 'Order Placed', message: 'Payment pending initialization' }]
     });
 
-    res.json({ order, dbOrderId: newDbOrder._id });
+    res.json({ 
+      order, 
+      dbOrderId: newDbOrder._id,
+      key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_mock'
+    });
   } catch (error) {
     console.error(error);
     res.status(500).send(error);

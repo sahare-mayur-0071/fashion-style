@@ -37,10 +37,15 @@ const MyOrders = () => {
   if (loading) return <div>Loading orders...</div>;
 
   return (
-    <div className="animate-fade-in">
-      <div className="dash-header">
-        <h2>My Orders</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>View your order history and track deliveries.</p>
+    <>
+      {trackingOrder && (
+        <TrackingModal order={trackingOrder} onClose={() => setTrackingOrder(null)} />
+      )}
+      
+      <div className="animate-fade-in">
+        <div className="dash-header">
+          <h2>My Orders</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>View your order history and track deliveries.</p>
       </div>
 
       {orders.length === 0 ? (
@@ -108,11 +113,8 @@ const MyOrders = () => {
           ))}
         </div>
       )}
-
-      {trackingOrder && (
-        <TrackingModal order={trackingOrder} onClose={() => setTrackingOrder(null)} />
-      )}
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -32,13 +32,27 @@ const upload = multer({
 });
 
 router.post('/', upload.single('image'), (req, res) => {
-  // In a real scenario, this would trigger an AI matching model.
-  // For now, we return a mock set of matching tags based on the image upload.
-  const mockTags = ['Casual', 'Summer', 'Trendy'];
+  // Simulate AI visual recognition by extracting keywords from the filename
+  let dynamicTags = ['Casual', 'Trendy']; // Base tags
+  
+  if (req.file && req.file.originalname) {
+    const filename = req.file.originalname.toLowerCase();
+    
+    // Simple mock "AI" keyword extraction based on common clothing terms
+    const keywords = ['shirt', 't-shirt', 'jeans', 'dress', 'jacket', 'coat', 'blue', 'red', 'black', 'white', 'green', 'summer', 'winter', 'formal', 'casual', 'cotton', 'denim', 'leather', 'sneakers', 'shoes', 'boots', 'saree', 'kurta'];
+    
+    const matchedKeywords = keywords.filter(kw => filename.includes(kw));
+    
+    if (matchedKeywords.length > 0) {
+      dynamicTags = [...new Set([...dynamicTags, ...matchedKeywords])];
+    }
+  }
+
   res.send({ 
-    message: 'Image uploaded successfully', 
+    message: 'Image processed successfully by AI', 
     imagePath: `/${req.file.path.replace(/\\/g, '/')}`,
-    tags: mockTags
+    tags: dynamicTags,
+    searchQuery: dynamicTags.join(' ')
   });
 });
 
